@@ -1,4 +1,4 @@
-best <- function(state, outcome) {
+rankhospital <- function(state, outcome, num = "best") {
     # Read in the outcome of care measures file
     outcomeData <- read.csv("outcome-of-care-measures.csv", colClasses = "character")
 
@@ -16,7 +16,7 @@ best <- function(state, outcome) {
 
     # Get which outcome is being selected
     outcomeLocation <- match(outcome, possibleOutcomes)
-    
+
     # Validate that the outcome is one of the possible outcomes
     if (is.na(outcomeLocation)) {
         stop("invalid outcome")
@@ -38,12 +38,27 @@ best <- function(state, outcome) {
     # and convert the test column to numeric
     baseColumns <- c(baseColumns, columnName)
     subbed <- stateValues[, baseColumns]
-    subbed[, columnName] <- as.numeric(subbed[, columnName])
+    subbed[,columnName] <- as.numeric(subbed[,columnName])
 
-    # Get the min value of the subsets filter column
-    # and order it by the hostpital name
-    lowest <- subbed[which(subbed[, columnName] == min(subbed[, columnName], na.rm = TRUE)),]
-    ordered <- lowest[order(lowest$Hospital.Name),]
+    # Filter out any NA values and order then based on the filter column and hospital name
+    filtered <- subbed[!is.na(subbed[, columnName]),]
+    ordered <- filtered[order(filtered[,columnName], filtered[,"Hospital.Name"]),]
 
-    return(ordered[1,]$Hospital.Name)
+    # Check that if the num parameter is a numeric value
+    # and that it isn't greater than the number of hostpitals
+    if (is.numeric(num)) {
+        if (num > nrow(ordered)) {
+            return(NA)
+        } else {
+            return(ordered[num, ]$Hospital.Name)
+        }
+    } else {
+        if (num == "best") {
+            return(ordered[1,]$Hospital.Name)
+        } else if (num == "worst") {
+            return(ordered[nrow(ordered),]$Hospital.Name)
+        } else {
+            stop("invalid num")
+        }
+    }
 }
